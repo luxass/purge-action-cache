@@ -1,0 +1,36 @@
+name: CI Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'luxass'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: create test caches
+        run: |
+          echo "test1" | tee file1.txt
+          echo "test2" | tee file2.txt
+
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: file1.txt
+          key: test-cache-old-${{ github.run_id }}
+
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: file2.txt
+          key: test-cache-new-${{ github.run_id }}
+
+      - uses: ./
+        with:
+          debug: "true"

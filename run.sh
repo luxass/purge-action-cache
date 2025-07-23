@@ -25,14 +25,12 @@ fi
 
 MAX_DATE=$(( $(date +%s) - INPUT_MAX_AGE ))
 
-RECURSIVE_PAGE=1
 CACHE_ENTRIES=()
 
 ALL_CACHE_ENTRIES=$(gh cache list \
     --repo "${GITHUB_REPOSITORY:-}" \
     --ref "${GITHUB_REF:-}" \
     --limit "100" \
-    --page "${RECURSIVE_PAGE}" \
     --json='createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version')
 
 

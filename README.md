@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Purge GitHub Actions Cache
-        uses: luxass/purge-action-cache@v0.0.0
+        uses: luxass/purge-action-cache@v0.1.0
         with:
           max-age: 604800 # 7 days in seconds
           filter-key: last_accessed_at # or created_at

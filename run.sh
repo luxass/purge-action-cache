@@ -18,9 +18,12 @@ if [[ ! "${INPUT_FILTER_KEY:-}" =~ ^(created_at|last_accessed_at)$ ]]; then
   bail "Invalid filter key option: ${INPUT_FILTER_KEY:-}. Valid options are: created_at, last_accessed_at."
 fi
 
-if ! MAX_DATE=$(date -d "${INPUT_MAX_AGE:-1d}" +%s 2>/dev/null); then
-  bail "Invalid INPUT_MAX_AGE value: '${INPUT_MAX_AGE:-1d}'. Please provide a valid date string or duration."
+if ! [[ "${INPUT_MAX_AGE:-604800}" =~ ^[0-9]+$ ]]; then
+  bail "Invalid INPUT_MAX_AGE value: '${INPUT_MAX_AGE:-604800}'. Please provide a valid number of seconds."
 fi
+
+
+MAX_DATE=$(( $(date +%s) - INPUT_MAX_AGE ))
 
 RECURSIVE_PAGE=1
 CACHE_ENTRIES=()
@@ -60,10 +63,15 @@ while true; do
   fi
 
   # append entries to CACHE_ENTRIES array
-  CACHE_ENTRIES+=("${PAGE_ENTRIES}")
+  if [[ -z "${CACHE_ENTRIES[0]}" ]]; then
+    CACHE_ENTRIES="${PAGE_ENTRIES}"
+  else
+    CACHE_ENTRIES=$(echo "${CACHE_ENTRIES}" "${PAGE_ENTRIES}" | jq -s 'add')
+  fi
 
-  # check if there are more pages
-  if [[ $(gh cache list --repo "${GITHUB_REPOSITORY:-}" --limit "1" --page $((RECURSIVE_PAGE + 1)) | wc -l) -eq 0 ]]; then
+  # check if there are more pages by checking the length of the entries
+  # if it's less than 100, we assume there are no more pages
+  if [[ $(echo "${ALL_PAGE_ENTRIES}" | jq length) -lt 100 ]]; then
     break
   fi
 
@@ -71,7 +79,7 @@ while true; do
 done
 
 # print length of cache entries
-info "Found $(echo "${CACHE_ENTRIES[@]}" | jq length) cache entries."
+info "Found ${#CACHE_ENTRIES[@]} cache entries."
 
 # if no cache entries found, exit
 if [[ ${#CACHE_ENTRIES[@]} -eq 0 ]]; then

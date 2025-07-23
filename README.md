@@ -23,7 +23,7 @@ jobs:
         uses: luxass/purge-action-cache@v0.1.0
         with:
           max-age: 604800 # 7 days in seconds
-          sort: last_accessed_at # or created_at
+          filter-key: last_accessed_at # or created_at
           debug: true # optional, set to true for debug output
 ```
 

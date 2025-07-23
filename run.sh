@@ -27,8 +27,6 @@ MAX_DATE=$(( $(date +%s) - INPUT_MAX_AGE ))
 
 info "Purging caches older than ${INPUT_MAX_AGE} seconds (max date: ${MAX_DATE})."
 
-CACHE_ENTRIES=()
-
 ALL_CACHE_ENTRIES=$(gh cache list \
     --repo "${GITHUB_REPOSITORY:-}" \
     --ref "${GITHUB_REF:-}" \
@@ -57,22 +55,23 @@ CACHE_ENTRIES=$(echo "${ALL_CACHE_ENTRIES}" | jq "${JQ_FILTER} | {
 }")
 
 # print length of cache entries
-info "Found ${#CACHE_ENTRIES[@]} cache entries."
+CACHE_COUNT=$(echo "${CACHE_ENTRIES}" | jq -s length)
+info "Found ${CACHE_COUNT} cache entries."
 
 # if no cache entries found, exit
-if [[ ${#CACHE_ENTRIES[@]} -eq 0 ]]; then
+if [[ ${CACHE_COUNT} -eq 0 ]]; then
   info "No cache entries to purge."
   exit 0
 fi
 
 debug "Cache entries to purge:"
-for ENTRY in "${CACHE_ENTRIES[@]}"; do
+echo "${CACHE_ENTRIES}" | jq -c '.' | while IFS= read -r ENTRY; do
   # TODO(@luxass): print cache entry details
   debug "located cache entry: $(echo "${ENTRY}" | jq -r '.key')"
 done
 
 # loop through cache entries and purge them
-for ENTRY in "${CACHE_ENTRIES[@]}"; do
+echo "${CACHE_ENTRIES}" | jq -c '.' | while IFS= read -r ENTRY; do
   CACHE_ID=$(echo "${ENTRY}" | jq -r '.id')
 
   # TODO(@luxass): figure out error handling for gh cache delete

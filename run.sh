@@ -44,6 +44,8 @@ case "${INPUT_FILTER_KEY:-last_accessed_at}" in
     ;;
 esac
 
+info "Filtering cache entries older than ${INPUT_MAX_AGE} seconds using filter key: ${INPUT_FILTER_KEY:-last_accessed_at}"
+
 CACHE_ENTRIES=$(echo "${ALL_CACHE_ENTRIES}" | jq "${JQ_FILTER} | {
   id: .id,
   key: .key,
@@ -54,9 +56,12 @@ CACHE_ENTRIES=$(echo "${ALL_CACHE_ENTRIES}" | jq "${JQ_FILTER} | {
   version: .version
 }")
 
+
+
 # print length of cache entries
+ALL_CACHE_COUNT=$(echo "${ALL_CACHE_ENTRIES}" | jq -s length)
 CACHE_COUNT=$(echo "${CACHE_ENTRIES}" | jq -s length)
-info "Found ${CACHE_COUNT} cache entries."
+info "Found ${ALL_CACHE_COUNT} total cache entries, ${CACHE_COUNT} of which are older than ${INPUT_MAX_AGE} seconds."
 
 # if no cache entries found, exit
 if [[ ${CACHE_COUNT} -eq 0 ]]; then

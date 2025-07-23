@@ -1,0 +1,37 @@
+name: Purge GitHub Action Cache
+description: A GitHub Action to purge the GitHub Action cache
+author: Lucas Nørgård
+branding:
+  color: green
+  icon: archive
+
+inputs:
+  debug:
+    description: 'Output debug info'
+    default: "false"
+  max-age:
+    description: 'Delete all caches older than this value in seconds'
+    required: true
+    default: "604800"
+  filter-key:
+    description: 'Filter caches by "last_accessed_at" or "created_at"'
+    required: true
+    default: "last_accessed_at"
+  token:
+    description: Used to communicate with GitHub API. Since there's a default, this is typically not supplied by the user.
+    default: ${{ github.token }}
+
+# Note:
+# - inputs.* should be manually mapped to INPUT_* due to https://github.com/actions/runner/issues/665
+# - Use GITHUB_*/RUNNER_* instead of github.*/runner.* due to https://github.com/actions/runner/issues/2185
+runs:
+  using: composite
+  steps:
+    - id: purge-cache
+      env:
+        INPUT_DEBUG: ${{ inputs.debug }}
+        INPUT_MAX_AGE: ${{ inputs.max-age }}
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_FILTER_KEY: ${{ inputs.filter-key }}
+      run: bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/run.sh"
+      shell: bash

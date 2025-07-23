@@ -25,6 +25,8 @@ fi
 
 MAX_DATE=$(( $(date +%s) - INPUT_MAX_AGE ))
 
+info "Purging caches older than ${INPUT_MAX_AGE} seconds (max date: ${MAX_DATE})."
+
 CACHE_ENTRIES=()
 
 ALL_CACHE_ENTRIES=$(gh cache list \
@@ -37,10 +39,10 @@ ALL_CACHE_ENTRIES=$(gh cache list \
 # Filter based on the filter key option
 case "${INPUT_FILTER_KEY:-last_accessed_at}" in
   "created_at")
-    JQ_FILTER='.[] | select((.createdAt | fromdateiso8601) < '${MAX_DATE}')'
+    JQ_FILTER='.[] | select((.createdAt | .[0:19] +"Z" | fromdateiso8601) < '${MAX_DATE}')'
     ;;
   "last_accessed_at")
-    JQ_FILTER='.[] | select((.lastAccessedAt | fromdateiso8601) < '${MAX_DATE}')'
+    JQ_FILTER='.[] | select((.lastAccessedAt | .[0:19] +"Z" | fromdateiso8601) < '${MAX_DATE}')'
     ;;
 esac
 

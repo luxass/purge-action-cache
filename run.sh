@@ -77,11 +77,12 @@ done
 
 # loop through cache entries and purge them
 echo "${CACHE_ENTRIES}" | jq -c '.' | while IFS= read -r ENTRY; do
-  CACHE_ID=$(echo "${ENTRY}" | jq -r '.id')
+  CACHE_KEY=$(echo "${ENTRY}" | jq -r '.key')
 
   # TODO(@luxass): figure out error handling for gh cache delete
-  debug "Purging cache entry with ID: ${CACHE_ID}"
+  debug "purging cache entry key=(${CACHE_KEY}), id=($(echo "${ENTRY}" | jq -r '.id'))"
 
-  gh cache delete "${CACHE_ID}" \
-    --repo "${GITHUB_REPOSITORY:-}"
+  gh cache delete "${CACHE_KEY}" \
+    --repo "${GITHUB_REPOSITORY:-}" \
+    --ref "${GITHUB_REF:-}"
 done

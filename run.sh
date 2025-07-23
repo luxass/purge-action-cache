@@ -59,7 +59,7 @@ CACHE_ENTRIES=$(echo "${ALL_CACHE_ENTRIES}" | jq "${JQ_FILTER} | {
 
 
 # print length of cache entries
-ALL_CACHE_COUNT=$(echo "${ALL_CACHE_ENTRIES}" | jq -s length)
+ALL_CACHE_COUNT=$(echo "${ALL_CACHE_ENTRIES}" | jq -s '.[] | length')
 CACHE_COUNT=$(echo "${CACHE_ENTRIES}" | jq -s length)
 info "Found ${ALL_CACHE_COUNT} total cache entries, ${CACHE_COUNT} of which are older than ${INPUT_MAX_AGE} seconds."
 

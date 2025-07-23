@@ -71,18 +71,16 @@ fi
 
 debug "Cache entries to purge:"
 echo "${CACHE_ENTRIES}" | jq -c '.' | while IFS= read -r ENTRY; do
-  # TODO(@luxass): print cache entry details
-  debug "located cache entry: $(echo "${ENTRY}" | jq -r '.key')"
+  debug "cache entry: $(echo "${ENTRY}" | jq -r '"key=\(.key), id=\(.id), size=\(.size_in_bytes) bytes, created=\(.created_at), last_accessed=\(.last_accessed_at)"')"
 done
 
 # loop through cache entries and purge them
 echo "${CACHE_ENTRIES}" | jq -c '.' | while IFS= read -r ENTRY; do
   CACHE_KEY=$(echo "${ENTRY}" | jq -r '.key')
 
-  # TODO(@luxass): figure out error handling for gh cache delete
   debug "purging cache entry key=(${CACHE_KEY}), id=($(echo "${ENTRY}" | jq -r '.id'))"
 
-  gh cache delete "${CACHE_KEY}" \
-    --repo "${GITHUB_REPOSITORY:-}" \
-    --ref "${GITHUB_REF:-}"
+  if ! gh cache delete "${CACHE_KEY}" --repo "${GITHUB_REPOSITORY:-}"; then
+    bail "Failed to purge cache entry with key: ${CACHE_KEY}"
+  fi
 done

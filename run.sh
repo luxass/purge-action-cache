@@ -28,55 +28,33 @@ MAX_DATE=$(( $(date +%s) - INPUT_MAX_AGE ))
 RECURSIVE_PAGE=1
 CACHE_ENTRIES=()
 
-while true; do
-  # list all cache entries by recursively calling `gh cache list`
-  ALL_PAGE_ENTRIES=$(gh cache list \
+ALL_CACHE_ENTRIES=$(gh cache list \
     --repo "${GITHUB_REPOSITORY:-}" \
     --ref "${GITHUB_REF:-}" \
     --limit "100" \
     --page "${RECURSIVE_PAGE}" \
     --json='createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version')
 
-  # Filter based on the filter key option
-  case "${INPUT_FILTER_KEY:-last_accessed_at}" in
-    "created_at")
-      JQ_FILTER='.[] | select((.createdAt | fromdateiso8601) < '${MAX_DATE}')'
-      ;;
-    "last_accessed_at")
-      JQ_FILTER='.[] | select((.lastAccessedAt | fromdateiso8601) < '${MAX_DATE}')'
-      ;;
-  esac
 
-  PAGE_ENTRIES=$(echo "${ALL_PAGE_ENTRIES}" | jq "${JQ_FILTER} | {
-    id: .id,
-    key: .key,
-    created_at: .createdAt,
-    last_accessed_at: .lastAccessedAt,
-    size_in_bytes: .sizeInBytes,
-    ref: .ref,
-    version: .version
-  }")
+# Filter based on the filter key option
+case "${INPUT_FILTER_KEY:-last_accessed_at}" in
+  "created_at")
+    JQ_FILTER='.[] | select((.createdAt | fromdateiso8601) < '${MAX_DATE}')'
+    ;;
+  "last_accessed_at")
+    JQ_FILTER='.[] | select((.lastAccessedAt | fromdateiso8601) < '${MAX_DATE}')'
+    ;;
+esac
 
-  if [[ -z "${PAGE_ENTRIES}" ]]; then
-    info "No cache entries found on page ${RECURSIVE_PAGE}."
-    break
-  fi
-
-  # append entries to CACHE_ENTRIES array
-  if [[ -z "${CACHE_ENTRIES[0]}" ]]; then
-    CACHE_ENTRIES="${PAGE_ENTRIES}"
-  else
-    CACHE_ENTRIES=$(echo "${CACHE_ENTRIES}" "${PAGE_ENTRIES}" | jq -s 'add')
-  fi
-
-  # check if there are more pages by checking the length of the entries
-  # if it's less than 100, we assume there are no more pages
-  if [[ $(echo "${ALL_PAGE_ENTRIES}" | jq length) -lt 100 ]]; then
-    break
-  fi
-
-  ((RECURSIVE_PAGE++))
-done
+CACHE_ENTRIES=$(echo "${ALL_CACHE_ENTRIES}" | jq "${JQ_FILTER} | {
+  id: .id,
+  key: .key,
+  created_at: .createdAt,
+  last_accessed_at: .lastAccessedAt,
+  size_in_bytes: .sizeInBytes,
+  ref: .ref,
+  version: .version
+}")
 
 # print length of cache entries
 info "Found ${#CACHE_ENTRIES[@]} cache entries."

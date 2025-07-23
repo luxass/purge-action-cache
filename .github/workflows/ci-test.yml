@@ -31,6 +31,11 @@ jobs:
           path: file2.txt
           key: test-cache-new-${{ github.run_id }}
 
-      - uses: ./
+      - name: wait 10 seconds
+        run: sleep 10
+
+      - name: purge old caches (older than 10 seconds)
+        uses: ./
         with:
           debug: "true"
+          max-age: 10

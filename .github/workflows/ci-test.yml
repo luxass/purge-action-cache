@@ -48,7 +48,7 @@ jobs:
         run: sleep 10
 
       - name: purge old caches (older than 10 seconds)
-        uses: ./
+        uses: luxass/purge-action-cache@main
         with:
           debug: "true"
           max-age: 10

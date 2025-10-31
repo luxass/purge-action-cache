@@ -134,7 +134,7 @@ purge_by_age() {
 purge_all() {
   info "Purging all caches using 'gh cache delete --all'."
 
-  if ! gh cache delete --all --repo "${GITHUB_REPOSITORY:-}"; then
+  if ! gh cache delete --all --repo "${GITHUB_REPOSITORY:-}" --succeed-on-no-caches; then
     bail "Failed to purge all cache entries"
   fi
 

@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Purge old GitHub Actions Cache entries
-        uses: luxass/purge-action-cache@v0.1.0
+        uses: luxass/purge-action-cache@v0.2.0
         with:
           mode: normal # default, can be omitted
           max-age: 604800 # 7 days in seconds (default)
@@ -41,7 +41,7 @@ jobs:
 
 ```yaml
 - name: Purge old caches for feature branch
-  uses: luxass/purge-action-cache@v0.1.0
+  uses: luxass/purge-action-cache@v0.2.0
   with:
     mode: normal
     ref-key: refs/heads/feature-branch
@@ -53,7 +53,7 @@ jobs:
 
 ```yaml
 - name: Purge all caches
-  uses: luxass/purge-action-cache@v0.1.0
+  uses: luxass/purge-action-cache@v0.2.0
   with:
     mode: all
 ```

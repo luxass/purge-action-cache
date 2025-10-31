@@ -11,16 +11,13 @@ source "${SCRIPT_DIR}/utils.sh"
 ensure_requirements
 
 # Verify that `mode` is valid
-MODE="${INPUT_MODE:-age}"
+MODE="${INPUT_MODE:-normal}"
 
 ensure_options
 
 case "${MODE}" in
-  "age")
+  "normal")
     purge_by_age
-    ;;
-  "ref")
-    purge_by_age "${INPUT_REF}"
     ;;
   "all")
     purge_all

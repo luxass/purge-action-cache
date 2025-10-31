@@ -51,17 +51,8 @@ ensure_options() {
     bail "GITHUB_REPOSITORY is not set. This action must be run in a GitHub Actions environment."
   fi
 
-  # If mode is `ref`, ensure INPUT_REF is set
-  if [[ "${MODE}" == "ref" ]]; then
-    if [[ -z "${INPUT_REF:-}" ]]; then
-      bail "INPUT_REF must be set when mode is 'ref'."
-    fi
-  fi
-
-
-
-  # If mode is `age`
-  if [[ "${MODE}" == "age" ]]; then
+  # If mode is `normal`
+  if [[ "${MODE}" == "normal" ]]; then
     # Ensure that INPUT_MAX_AGE is a valid number
     if ! [[ "${INPUT_MAX_AGE:-604800}" =~ ^[0-9]+$ ]]; then
       bail "Invalid INPUT_MAX_AGE value: '${INPUT_MAX_AGE:-604800}'. Please provide a valid number of seconds."
@@ -77,7 +68,7 @@ ensure_options() {
 purge_by_age() {
   local max_age="${INPUT_MAX_AGE:-604800}"
   local filter_key="${INPUT_FILTER_KEY:-last_accessed_at}"
-  local ref="${1:-${GITHUB_REF:-}}"
+  local ref_key="${INPUT_REF_KEY:-${GITHUB_REF:-}}"
 
   local max_date=$(( $(date +%s) - max_age ))
 
@@ -85,7 +76,7 @@ purge_by_age() {
 
   local all_cache_entries=$(gh cache list \
       --repo "${GITHUB_REPOSITORY:-}" \
-      --ref "${ref}" \
+      --ref "${ref_key}" \
       --limit "100" \
       --json='createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version')
 
@@ -134,7 +125,7 @@ purge_by_age() {
 
     debug "purging cache entry key=(${cache_key}), id=($(echo "${ENTRY}" | jq -r '.id'))"
 
-    if ! gh cache delete "${cache_key}" --repo "${GITHUB_REPOSITORY:-}" --ref "${ref}"; then
+    if ! gh cache delete "${cache_key}" --repo "${GITHUB_REPOSITORY:-}" --ref "${ref_key}"; then
       bail "Failed to purge cache entry with key: ${cache_key}"
     fi
   done

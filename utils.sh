@@ -100,6 +100,11 @@ purge_by_age() {
 
   info "Filtering cache entries older than ${max_age} seconds using filter key: ${filter_key}"
 
+  debug "All cache entries before filtering:"
+  if [[ -n "${INPUT_DEBUG:-}" && "${INPUT_DEBUG}" == "true" ]]; then
+    echo "${all_cache_entries}" | jq -r '.[] | "  id=\(.id), key=\(.key), created=\(.createdAt), last_accessed=\(.lastAccessedAt)"' >&2
+  fi
+
   local cache_entries=$(echo "${all_cache_entries}" | jq "${jq_filter} | {
     id: .id,
     key: .key,

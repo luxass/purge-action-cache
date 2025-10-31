@@ -187,12 +187,16 @@ jobs:
       - name: verify all caches were deleted
         run: |
           # Check that both caches are gone
-          REMAINING=$(gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -c "test-all-cache-" || echo "0")
-          if [ "$REMAINING" != "0" ]; then
+          echo "Listing remaining caches..."
+          gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }}
+
+          REMAINING=$(gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -c "test-all-cache-" || true)
+          echo "Found $REMAINING cache(s) matching 'test-all-cache-'"
+
+          if [ "$REMAINING" != "0" ] && [ -n "$REMAINING" ]; then
             echo "ERROR: $REMAINING cache(s) still exist!"
-            gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }}
             exit 1
           fi
-          echo "SUCCESS: All caches were deleted"
+          echo "SUCCESS: All caches were deleted (found $REMAINING matching caches)"
         env:
           GH_TOKEN: ${{ github.token }}

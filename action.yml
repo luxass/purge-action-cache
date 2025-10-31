@@ -9,14 +9,22 @@ inputs:
   debug:
     description: 'Output debug info'
     default: "false"
-  max-age:
-    description: 'Delete all caches older than this value in seconds'
+  mode:
+    description: 'Cache cleanup mode: "normal" (time-based with optional ref), or "all"'
     required: true
+    default: "normal"
+  max-age:
+    description: 'Delete all caches older than this value in seconds (used with "normal" mode)'
+    required: false
     default: "604800"
   filter-key:
-    description: 'Filter caches by "last_accessed_at" or "created_at"'
-    required: true
+    description: 'Filter caches by "last_accessed_at" or "created_at" (used with "normal" mode)'
+    required: false
     default: "last_accessed_at"
+  ref-key:
+    description: 'The branch or tag ref to target. If not specified, uses GITHUB_REF (used with "normal" mode)'
+    required: false
+    default: ""
   token:
     description: Used to communicate with GitHub API. Since there's a default, this is typically not supplied by the user.
     default: ${{ github.token }}
@@ -30,8 +38,10 @@ runs:
     - id: purge-cache
       env:
         INPUT_DEBUG: ${{ inputs.debug }}
+        INPUT_MODE: ${{ inputs.mode }}
         INPUT_MAX_AGE: ${{ inputs.max-age }}
         GH_TOKEN: ${{ inputs.token }}
+        INPUT_REF_KEY: ${{ inputs.ref-key }}
         INPUT_FILTER_KEY: ${{ inputs.filter-key }}
       run: bash --noprofile --norc "${GITHUB_ACTION_PATH:?}/run.sh"
       shell: bash

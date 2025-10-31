@@ -72,6 +72,13 @@ purge_by_age() {
 
   local max_date=$(( $(date +%s) - max_age ))
 
+  debug "Options:"
+  debug "  mode: normal"
+  debug "  max_age: ${max_age} seconds"
+  debug "  filter_key: ${filter_key}"
+  debug "  ref_key: ${ref_key}"
+  debug "  max_date: ${max_date}"
+
   info "Purging caches older than ${max_age} seconds (max date: ${max_date})."
 
   local all_cache_entries=$(gh cache list \
@@ -132,6 +139,10 @@ purge_by_age() {
 }
 
 purge_all() {
+  debug "Options:"
+  debug "  mode: all"
+  debug "  repository: ${GITHUB_REPOSITORY:-}"
+
   info "Purging all caches using 'gh cache delete --all'."
 
   if ! gh cache delete --all --repo "${GITHUB_REPOSITORY:-}" --succeed-on-no-caches; then

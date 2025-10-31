@@ -40,12 +40,15 @@ jobs:
           path: new-file.txt
           key: test-cache-new-${{ github.run_id }}
 
-      - name: purge old caches (older than 5 seconds)
+      - name: wait 2 seconds to ensure cache is registered
+        run: sleep 2
+
+      - name: purge old caches (older than 8 seconds)
         uses: ./
         with:
           mode: normal
           debug: "true"
-          max-age: 5
+          max-age: 8
           filter-key: last_accessed_at
 
       - name: verify old cache was deleted and new cache still exists

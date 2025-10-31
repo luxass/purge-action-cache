@@ -18,7 +18,7 @@ release VERSION:
     git commit -m "chore: bump version to {{VERSION}}"
 
     # Create and push the tag
-    git tag "{{VERSION}}"
+    git tag "{{VERSION}}" --sign
     git push origin main
     git push origin "{{VERSION}}"
 

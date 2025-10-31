@@ -29,8 +29,8 @@ jobs:
     needs: create-old-cache
     if: github.repository_owner == 'luxass'
     steps:
-      - name: wait 10 seconds
-        run: sleep 10
+      - name: wait 30 seconds
+        run: sleep 30
 
       - name: create new test cache
         run: echo "new-cache-${{ github.run_id }}" | tee new-file.txt
@@ -52,15 +52,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: wait 2 seconds to ensure caches are registered
-        run: sleep 2
-
-      - name: purge old caches (older than 8 seconds)
+      - name: purge old caches (older than 25 seconds)
         uses: ./
         with:
           mode: normal
           debug: "true"
-          max-age: 8
+          max-age: 25
           filter-key: last_accessed_at
 
       - name: verify old cache was deleted and new cache still exists

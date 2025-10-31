@@ -68,7 +68,7 @@ ensure_options() {
 purge_by_age() {
   local max_age="${INPUT_MAX_AGE:-604800}"
   local filter_key="${INPUT_FILTER_KEY:-last_accessed_at}"
-  local ref_key="${INPUT_REF_KEY:-${GITHUB_REF:-}}"
+  local ref_key="${INPUT_REF_KEY:-}"
 
   local max_date=$(( $(date +%s) - max_age ))
 
@@ -76,16 +76,20 @@ purge_by_age() {
   debug "  mode: normal"
   debug "  max_age: ${max_age} seconds"
   debug "  filter_key: ${filter_key}"
-  debug "  ref_key: ${ref_key}"
+  debug "  ref_key: ${ref_key:-<not specified>}"
   debug "  max_date: ${max_date}"
 
   info "Purging caches older than ${max_age} seconds (max date: ${max_date})."
 
-  local all_cache_entries=$(gh cache list \
-      --repo "${GITHUB_REPOSITORY:-}" \
-      --ref "${ref_key}" \
-      --limit "100" \
-      --json='createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version')
+  local cache_list_cmd="gh cache list --repo ${GITHUB_REPOSITORY:-} --limit 100 --json=createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version"
+  if [[ -n "${ref_key}" ]]; then
+    cache_list_cmd="${cache_list_cmd} --ref ${ref_key}"
+    debug "Filtering by ref: ${ref_key}"
+  else
+    debug "No ref specified, listing caches for all refs"
+  fi
+
+  local all_cache_entries=$(eval "${cache_list_cmd}")
 
   # Filter based on the filter key option
   local jq_filter
@@ -134,10 +138,11 @@ purge_by_age() {
   # loop through cache entries and purge them
   echo "${cache_entries}" | jq -c '.' | while IFS= read -r ENTRY; do
     local cache_key=$(echo "${ENTRY}" | jq -r '.key')
+    local entry_ref=$(echo "${ENTRY}" | jq -r '.ref')
 
-    debug "purging cache entry key=(${cache_key}), id=($(echo "${ENTRY}" | jq -r '.id'))"
+    debug "purging cache entry key=(${cache_key}), id=($(echo "${ENTRY}" | jq -r '.id')), ref=(${entry_ref})"
 
-    if ! gh cache delete "${cache_key}" --repo "${GITHUB_REPOSITORY:-}" --ref "${ref_key}"; then
+    if ! gh cache delete "${cache_key}" --repo "${GITHUB_REPOSITORY:-}" --ref "${entry_ref}"; then
       bail "Failed to purge cache entry with key: ${cache_key}"
     fi
   done

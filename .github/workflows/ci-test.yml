@@ -18,7 +18,7 @@ jobs:
       - name: create old test cache
         run: echo "old-cache-${{ github.run_id }}" | tee old-file.txt
 
-      - uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: old-file.txt
           key: test-cache-old-${{ github.run_id }}
@@ -35,7 +35,7 @@ jobs:
       - name: create new test cache
         run: echo "new-cache-${{ github.run_id }}" | tee new-file.txt
 
-      - uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: new-file.txt
           key: test-cache-new-${{ github.run_id }}
@@ -48,7 +48,7 @@ jobs:
     permissions:
       actions: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -89,14 +89,14 @@ jobs:
     permissions:
       actions: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: create test cache 1
         run: echo "test1" | tee file1.txt
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: file1.txt
           key: test-created-at-cache-${{ github.run_id }}
@@ -129,14 +129,14 @@ jobs:
     permissions:
       actions: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: create test cache
         run: echo "ref-test" | tee ref-file.txt
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ref-file.txt
           key: test-ref-cache-${{ github.run_id }}
@@ -169,7 +169,7 @@ jobs:
     permissions:
       actions: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -178,12 +178,12 @@ jobs:
           echo "all-test-1" | tee all-file1.txt
           echo "all-test-2" | tee all-file2.txt
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: all-file1.txt
           key: test-all-cache-1-${{ github.run_id }}
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: all-file2.txt
           key: test-all-cache-2-${{ github.run_id }}

@@ -26,8 +26,7 @@ jobs:
       contents: read
       actions: write
     env:
-      OLD_CACHE_KEY: test-cache-old-${{ github.run_id }}-${{ github.run_attempt }}
-      NEW_CACHE_KEY: test-cache-new-${{ github.run_id }}-${{ github.run_attempt }}
+      CACHE_TEST_KEY_PREFIX: test-cache-${{ github.run_id }}-${{ github.run_attempt }}-last-accessed-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -39,7 +38,7 @@ jobs:
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: old-file.txt
-          key: ${{ env.OLD_CACHE_KEY }}
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}old
 
       - name: wait for the old cache to age
         run: sleep 30
@@ -50,14 +49,20 @@ jobs:
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: new-file.txt
-          key: ${{ env.NEW_CACHE_KEY }}
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}new
 
       - name: verify old cache exists before purging
         run: |
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$OLD_CACHE_KEY" --json key |
-            jq -e --arg key "$OLD_CACHE_KEY" 'any(.[]; .key == $key)'
+          key="${CACHE_TEST_KEY_PREFIX}old"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'any(.[]; .key == $key)'
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: scope cache listing to this test's fixtures
+        run: |
+          printf 'CACHE_TEST_REAL_GH=%s\n' "$(command -v gh)" >> "$GITHUB_ENV"
+          printf '%s\n' "$GITHUB_WORKSPACE/.github/scripts/cache-test-bin" >> "$GITHUB_PATH"
 
       - name: purge old caches (older than 25 seconds)
         uses: ./
@@ -70,10 +75,12 @@ jobs:
 
       - name: verify old cache was deleted and new cache still exists
         run: |
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$OLD_CACHE_KEY" --json key |
-            jq -e --arg key "$OLD_CACHE_KEY" 'all(.[]; .key != $key)'
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$NEW_CACHE_KEY" --json key |
-            jq -e --arg key "$NEW_CACHE_KEY" 'any(.[]; .key == $key)'
+          old_key="${CACHE_TEST_KEY_PREFIX}old"
+          new_key="${CACHE_TEST_KEY_PREFIX}new"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$old_key" --json key |
+            jq -e --arg key "$old_key" 'all(.[]; .key != $key)'
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$new_key" --json key |
+            jq -e --arg key "$new_key" 'any(.[]; .key == $key)'
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -85,7 +92,7 @@ jobs:
       contents: read
       actions: write
     env:
-      CACHE_KEY: test-created-at-cache-${{ github.run_id }}-${{ github.run_attempt }}
+      CACHE_TEST_KEY_PREFIX: test-cache-${{ github.run_id }}-${{ github.run_attempt }}-created-at-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -97,15 +104,21 @@ jobs:
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: cache-file.txt
-          key: ${{ env.CACHE_KEY }}
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}entry
 
       - name: wait for the cache to age and verify it exists
         run: |
           sleep 8
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$CACHE_KEY" --json key |
-            jq -e --arg key "$CACHE_KEY" 'any(.[]; .key == $key)'
+          key="${CACHE_TEST_KEY_PREFIX}entry"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'any(.[]; .key == $key)'
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: scope cache listing to this test's fixtures
+        run: |
+          printf 'CACHE_TEST_REAL_GH=%s\n' "$(command -v gh)" >> "$GITHUB_ENV"
+          printf '%s\n' "$GITHUB_WORKSPACE/.github/scripts/cache-test-bin" >> "$GITHUB_PATH"
 
       - name: purge caches using created_at filter (older than 5 seconds)
         uses: ./
@@ -118,8 +131,9 @@ jobs:
 
       - name: verify cache was deleted
         run: |
-          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$CACHE_KEY" --json key |
-            jq -e --arg key "$CACHE_KEY" 'all(.[]; .key != $key)'
+          key="${CACHE_TEST_KEY_PREFIX}entry"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'all(.[]; .key != $key)'
         env:
           GH_TOKEN: ${{ github.token }}
 

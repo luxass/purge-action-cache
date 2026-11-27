@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -eu
+
+# Keep live age tests from listing caches that belong to other jobs.
+# The action still lists and deletes real cache entries through GitHub CLI.
+if [[ "${1:-}" == cache && "${2:-}" == list ]]; then
+  for arg in "$@"; do
+    if [[ "${arg}" == --key || "${arg}" == --key=* ]]; then
+      exec "${CACHE_TEST_REAL_GH:?}" "$@"
+    fi
+  done
+  set -- "$@" --key "${CACHE_TEST_KEY_PREFIX:?}"
+fi
+
+exec "${CACHE_TEST_REAL_GH:?}" "$@"

@@ -17,28 +17,11 @@ on:
 
 jobs:
   zizmor:
-    name: zizmor
-    runs-on: ubuntu-latest
     permissions:
+      actions: read
+      contents: read
+      id-token: write
       security-events: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: install uv
-        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with:
-          # Cache purge tests use the same PR ref.
-          enable-cache: false
-
-      - name: run zizmor
-        run: uvx zizmor --format sarif . > results.sarif
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: upload sarif file
-        uses: github/codeql-action/upload-sarif@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
-        with:
-          sarif_file: results.sarif
-          category: zizmor
+    uses: luxass/shared-workflows/.github/workflows/reusable-ci-security.yaml@411fe8f8a0a53eab5153356ac5e0f174cd245eb2 # v0.17.1
+    with:
+      min-severity: medium

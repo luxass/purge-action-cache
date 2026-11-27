@@ -9,48 +9,55 @@ on:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
+# Age tests delete caches on the current ref. Do not overlap runs on that ref.
+concurrency:
+  group: cache-tests-${{ github.ref }}
+
 jobs:
-  create-old-cache:
-    name: Create old cache
-    runs-on: ubuntu-latest
-    if: github.repository_owner == 'luxass'
-    steps:
-      - name: create old test cache
-        run: echo "old-cache-${{ github.run_id }}" | tee old-file.txt
-
-      - uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: old-file.txt
-          key: test-cache-old-${{ github.run_id }}
-
-  create-new-cache:
-    name: Create new cache
-    runs-on: ubuntu-latest
-    needs: create-old-cache
-    if: github.repository_owner == 'luxass'
-    steps:
-      - name: wait 30 seconds
-        run: sleep 30
-
-      - name: create new test cache
-        run: echo "new-cache-${{ github.run_id }}" | tee new-file.txt
-
-      - uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: new-file.txt
-          key: test-cache-new-${{ github.run_id }}
-
   test-normal-mode-time-based:
     name: Test normal mode (time-based)
     runs-on: ubuntu-latest
-    needs: create-new-cache
-    if: github.repository_owner == 'luxass'
+    if: github.repository_owner == 'luxass' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
+      contents: read
       actions: write
+    env:
+      CACHE_TEST_KEY_PREFIX: test-cache-${{ github.run_id }}-${{ github.run_attempt }}-last-accessed-
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: create old test cache
+        run: echo old-cache > old-file.txt
+
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: old-file.txt
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}old
+
+      - name: wait for the old cache to age
+        run: sleep 30
+
+      - name: create new test cache
+        run: echo new-cache > new-file.txt
+
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: new-file.txt
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}new
+
+      - name: verify old cache exists before purging
+        run: |
+          key="${CACHE_TEST_KEY_PREFIX}old"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'any(.[]; .key == $key)'
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: purge old caches (older than 25 seconds)
         uses: ./
@@ -59,50 +66,50 @@ jobs:
           debug: "true"
           max-age: 25
           filter-key: last_accessed_at
+          ref-key: ${{ github.ref }}
+          key-prefix: ${{ env.CACHE_TEST_KEY_PREFIX }}
 
       - name: verify old cache was deleted and new cache still exists
         run: |
-          # List remaining caches
-          echo "Listing all caches for this ref:"
-          gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }}
-
-          # Check that old cache is gone
-          if gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -q "test-cache-old-${{ github.run_id }}"; then
-            echo "ERROR: Old cache still exists!"
-            exit 1
-          fi
-
-          # Check that new cache still exists
-          if ! gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -q "test-cache-new-${{ github.run_id }}"; then
-            echo "ERROR: New cache was incorrectly deleted!"
-            exit 1
-          fi
-
-          echo "SUCCESS: Old cache deleted, new cache preserved"
+          old_key="${CACHE_TEST_KEY_PREFIX}old"
+          new_key="${CACHE_TEST_KEY_PREFIX}new"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$old_key" --json key |
+            jq -e --arg key "$old_key" 'all(.[]; .key != $key)'
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$new_key" --json key |
+            jq -e --arg key "$new_key" 'any(.[]; .key == $key)'
         env:
           GH_TOKEN: ${{ github.token }}
 
   test-normal-mode-created-at-filter:
     name: Test normal mode with created_at filter
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'luxass'
+    needs: test-normal-mode-time-based
     permissions:
+      contents: read
       actions: write
+    env:
+      CACHE_TEST_KEY_PREFIX: test-cache-${{ github.run_id }}-${{ github.run_attempt }}-created-at-
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: create test cache 1
-        run: echo "test1" | tee file1.txt
+      - name: create test cache
+        run: echo created-at-cache > cache-file.txt
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: file1.txt
-          key: test-created-at-cache-${{ github.run_id }}
+          path: cache-file.txt
+          key: ${{ env.CACHE_TEST_KEY_PREFIX }}entry
 
-      - name: wait 8 seconds
-        run: sleep 8
+      - name: wait for the cache to age and verify it exists
+        run: |
+          sleep 8
+          key="${CACHE_TEST_KEY_PREFIX}entry"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'any(.[]; .key == $key)'
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: purge caches using created_at filter (older than 5 seconds)
         uses: ./
@@ -111,102 +118,44 @@ jobs:
           debug: "true"
           max-age: 5
           filter-key: created_at
-
-      - name: verify cache was deleted
-        run: |
-          if gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -q "test-created-at-cache-${{ github.run_id }}"; then
-            echo "ERROR: Cache still exists!"
-            exit 1
-          fi
-          echo "SUCCESS: Cache was deleted based on created_at"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-  test-normal-mode-with-ref:
-    name: Test normal mode with specific ref
-    runs-on: ubuntu-latest
-    if: github.repository_owner == 'luxass'
-    permissions:
-      actions: write
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
-
-      - name: create test cache
-        run: echo "ref-test" | tee ref-file.txt
-
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: ref-file.txt
-          key: test-ref-cache-${{ github.run_id }}
-
-      - name: wait 3 seconds
-        run: sleep 3
-
-      - name: purge old caches for current ref (older than 2 seconds)
-        uses: ./
-        with:
-          mode: normal
-          debug: "true"
-          max-age: 2
           ref-key: ${{ github.ref }}
+          key-prefix: ${{ env.CACHE_TEST_KEY_PREFIX }}
 
       - name: verify cache was deleted
         run: |
-          if gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -q "test-ref-cache-${{ github.run_id }}"; then
-            echo "ERROR: Cache still exists!"
-            exit 1
-          fi
-          echo "SUCCESS: Cache was deleted for specific ref"
+          key="${CACHE_TEST_KEY_PREFIX}entry"
+          gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$key" --json key |
+            jq -e --arg key "$key" 'all(.[]; .key != $key)'
         env:
           GH_TOKEN: ${{ github.token }}
 
   test-all-mode:
     name: Test all mode
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'luxass'
     permissions:
-      actions: write
+      contents: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: create test caches
+      # Check the repository-wide delete command without touching real caches.
+      - name: stub the GitHub CLI
         run: |
-          echo "all-test-1" | tee all-file1.txt
-          echo "all-test-2" | tee all-file2.txt
-
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: all-file1.txt
-          key: test-all-cache-1-${{ github.run_id }}
-
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: all-file2.txt
-          key: test-all-cache-2-${{ github.run_id }}
+          mkdir -p "$RUNNER_TEMP/fake-bin"
+          cat > "$RUNNER_TEMP/fake-bin/gh" <<'EOF'
+          #!/usr/bin/env bash
+          printf '%s\n' "$@" > "$RUNNER_TEMP/cache-delete-args"
+          EOF
+          chmod +x "$RUNNER_TEMP/fake-bin/gh"
+          printf '%s\n' "$RUNNER_TEMP/fake-bin" >> "$GITHUB_PATH"
 
       - name: purge all caches
         uses: ./
         with:
           mode: all
-          debug: "true"
 
-      - name: verify all caches were deleted
+      - name: verify the repository-wide delete command
         run: |
-          # Check that both caches are gone
-          echo "Listing remaining caches..."
-          gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }}
-
-          REMAINING=$(gh cache list --repo ${{ github.repository }} --ref ${{ github.ref }} | grep -c "test-all-cache-" || true)
-          echo "Found $REMAINING cache(s) matching 'test-all-cache-'"
-
-          if [ "$REMAINING" != "0" ] && [ -n "$REMAINING" ]; then
-            echo "ERROR: $REMAINING cache(s) still exist!"
-            exit 1
-          fi
-          echo "SUCCESS: All caches were deleted (found $REMAINING matching caches)"
-        env:
-          GH_TOKEN: ${{ github.token }}
+          printf '%s\n' cache delete --all --repo "$GITHUB_REPOSITORY" --succeed-on-no-caches |
+            diff -u - "$RUNNER_TEMP/cache-delete-args"

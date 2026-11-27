@@ -69,6 +69,7 @@ purge_by_age() {
   local max_age="${INPUT_MAX_AGE:-604800}"
   local filter_key="${INPUT_FILTER_KEY:-last_accessed_at}"
   local ref_key="${INPUT_REF_KEY:-}"
+  local key_prefix="${INPUT_KEY_PREFIX:-}"
 
   local max_date=$(( $(date +%s) - max_age ))
 
@@ -81,15 +82,22 @@ purge_by_age() {
 
   info "Purging caches older than ${max_age} seconds (max date: ${max_date})."
 
-  local cache_list_cmd="gh cache list --repo ${GITHUB_REPOSITORY:-} --limit 100 --json=createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version"
+  local -a cache_list_args=(--repo "${GITHUB_REPOSITORY}" --limit 100 --json=createdAt,id,key,lastAccessedAt,ref,sizeInBytes,version)
   if [[ -n "${ref_key}" ]]; then
-    cache_list_cmd="${cache_list_cmd} --ref ${ref_key}"
+    cache_list_args+=(--ref "${ref_key}")
     debug "Filtering by ref: ${ref_key}"
   else
     debug "No ref specified, listing caches for all refs"
   fi
+  if [[ -n "${key_prefix}" ]]; then
+    cache_list_args+=(--key "${key_prefix}")
+    debug "Filtering by key prefix: ${key_prefix}"
+  fi
 
-  local all_cache_entries=$(eval "${cache_list_cmd}")
+  local all_cache_entries
+  if ! all_cache_entries=$(gh cache list "${cache_list_args[@]}"); then
+    bail "Failed to list cache entries"
+  fi
 
   # Filter based on the filter key option
   local jq_filter

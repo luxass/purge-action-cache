@@ -59,11 +59,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: scope cache listing to this test's fixtures
-        run: |
-          printf 'CACHE_TEST_REAL_GH=%s\n' "$(command -v gh)" >> "$GITHUB_ENV"
-          printf '%s\n' "$GITHUB_WORKSPACE/.github/scripts/cache-test-bin" >> "$GITHUB_PATH"
-
       - name: purge old caches (older than 25 seconds)
         uses: ./
         with:
@@ -72,6 +67,7 @@ jobs:
           max-age: 25
           filter-key: last_accessed_at
           ref-key: ${{ github.ref }}
+          key-prefix: ${{ env.CACHE_TEST_KEY_PREFIX }}
 
       - name: verify old cache was deleted and new cache still exists
         run: |
@@ -115,11 +111,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: scope cache listing to this test's fixtures
-        run: |
-          printf 'CACHE_TEST_REAL_GH=%s\n' "$(command -v gh)" >> "$GITHUB_ENV"
-          printf '%s\n' "$GITHUB_WORKSPACE/.github/scripts/cache-test-bin" >> "$GITHUB_PATH"
-
       - name: purge caches using created_at filter (older than 5 seconds)
         uses: ./
         with:
@@ -128,6 +119,7 @@ jobs:
           max-age: 5
           filter-key: created_at
           ref-key: ${{ github.ref }}
+          key-prefix: ${{ env.CACHE_TEST_KEY_PREFIX }}
 
       - name: verify cache was deleted
         run: |

@@ -66,6 +66,7 @@ jobs:
 | `max-age`    | Delete all caches older than this value in seconds (used with `normal` mode)                   | No       | `604800` (7 days)     |
 | `filter-key` | Filter caches by `"last_accessed_at"` or `"created_at"` (used with `normal` mode)              | No       | `last_accessed_at`    |
 | `ref-key`    | The branch or tag ref to target (used with `normal` mode). If not specified, uses `GITHUB_REF` | No       | `""`                  |
+| `key-prefix` | Only purge caches whose keys start with this prefix (used with `normal` mode)                 | No       | `""`                  |
 | `debug`      | Output debug info                                                                              | No       | `false`               |
 | `token`      | GitHub token for API access                                                                    | No       | `${{ github.token }}` |
 
